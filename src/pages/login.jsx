@@ -11,6 +11,7 @@ import geneticSvg from '../genetic-data-svgrepo-com.svg'
 import RightPanelContent from '../components/ui/rightpanel'
 import "../components/styles/App.css";
 import knot1 from "../knot1.png"
+import med44 from "../med44.jpeg"
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // import { faPhone } from '@fortawesome/free-solid-svg-icons';
 
@@ -161,7 +162,8 @@ const Login = () => {
           {/* Logo/Brand - Match structure and classes from index.html */}
           <div className="flex items-center space-x-2 mb-20 md:absolute top-0 left-0 mt-3 ml-2">
             <img
-              src={knot1}
+              // src={knot1}
+              src={med44}
               alt="med44 Logo"
               className="w-10 h-10"
             />

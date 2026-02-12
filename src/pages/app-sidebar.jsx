@@ -11,17 +11,6 @@ export function AppSidebar({ onSelectChatSession, onNewSessionClick, onCurrentSe
   const [appointments, setAppointments] = useState([]);
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
-  const [userId, setUserId] = useState('')
-  const [userImage, setUserImage] = useState('')
-  const token = localStorage.getItem('token');
-  const [loading, setLoading] = useState(false)
-  const [selectedSession, setSelectedSession] = useState(null);
-  useEffect(() => {
-    fetchChatSessions();
-    fetchAppointments();
-    console.log("fetchChatSessions&fetchAppointments")
-  }, [onCurrentSessionId])
-
   useEffect(() => {
     if (!token) {
       window.location.href = '/login';
@@ -43,54 +32,65 @@ export function AppSidebar({ onSelectChatSession, onNewSessionClick, onCurrentSe
       console.error("Error decoding token:", error);
       window.location.href = '/login';
     }
-  });
-
-  const fetchChatSessions = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/chat-sessions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
+  }, [token]);
+  const [userImage, setUserImage] = useState('')
+  const token = localStorage.getItem('token');
+  const [loading, setLoading] = useState(false)
+  const [selectedSession, setSelectedSession] = useState(null);
+  useEffect(() => {
+    const fetchChatSessions = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/chat-sessions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        if (response.data && response.data.sessions) {
+          const sortedSessions = response.data.sessions.sort((a, b) =>
+            new Date(b.timestamp) - new Date(a.timestamp)
+          );
+          setChatSessions(sortedSessions);
+        } else {
+          console.warn("No sessions data received or sessions is undefined");
         }
-      });
-      if (response.data && response.data.sessions) {
-        const sortedSessions = response.data.sessions.sort((a, b) =>
-          new Date(b.timestamp) - new Date(a.timestamp)
-        );
-        setChatSessions(sortedSessions);
-      } else {
-        console.warn("No sessions data received or sessions is undefined");
-      }
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error);
-      if (error.response) {
-        console.error('HTTP error:', error.response.status);
-        console.error('Response data:', error.response.data);
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-      } else {
-        console.error('Error setting up the request:', error.message);
-      }
-    }
-  };
-
-  const fetchAppointments = async () => {
-    try {
-      const appointmentsResponse = await axios.post(`${process.env.REACT_APP_POINT_REC}/booked`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
+      } catch (error) {
+        console.error('Error fetching chat sessions:', error);
+        if (error.response) {
+          console.error('HTTP error:', error.response.status);
+          console.error('Response data:', error.response.data);
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+        } else {
+          console.error('Error setting up the request:', error.message);
         }
-      });
-      const appointmentsData = await appointmentsResponse.data;
-      console.log(appointmentsData)
-      if (appointmentsData.data) {
-        console.log('Appointments loaded:', appointmentsData.data);
-        setAppointments(appointmentsData.data);
+      }
+    };
+
+    const fetchAppointments = async () => {
+      try {
+        const appointmentsResponse = await axios.post(`${process.env.REACT_APP_POINT_REC}/booked`, {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        const appointmentsData = await appointmentsResponse.data;
+        console.log(appointmentsData)
+        if (appointmentsData.data) {
+          console.log('Appointments loaded:', appointmentsData.data);
+          setAppointments(appointmentsData.data);
+        }
+      }
+      catch (error) {
+        console.error('Error fetching appointments:', error);
       }
     }
-    catch (error) {
-      console.error('Error fetching appointments:', error);
+
+    if (token) {
+      fetchChatSessions();
+      fetchAppointments();
     }
-  }
+    console.log("fetchChatSessions&fetchAppointments")
+  }, [onCurrentSessionId, token])
 
   const newSession = async () => {
     setLoading(true)

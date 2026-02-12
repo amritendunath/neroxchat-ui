@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { Copy, RotateCcw, Check, Sparkles, Zap, ChevronDown } from "lucide-react";
+import { Copy, RotateCcw, Check, Sparkles, Zap } from "lucide-react";
 
 export default function MessageBubble({ message, isLast, onRetry }) {
   const isUser = message.role === "user";

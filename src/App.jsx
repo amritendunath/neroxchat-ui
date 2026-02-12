@@ -11,7 +11,7 @@
 // }
 
 // export default App
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 // import { onAuthStateChanged } from 'firebase/auth';
 // import { auth } from './services/firebase_config';
 import React from 'react';
@@ -29,8 +29,7 @@ import NamePage from './pages/namepage'
 
 
 const App = () => {
-  const [user, setUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+
 
   // useEffect(() => {
   //   const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -50,8 +49,8 @@ const App = () => {
       <div className="min-h-screen bg-background">
         <Routes>
           <Route path="/login" element={<Login onLogin={handlelogin} />} />
-          <Route path="/namepage" element={<NamePage/>} />
-          <Route path="/testphone" element={<TestPhone/>} />
+          <Route path="/namepage" element={<NamePage />} />
+          <Route path="/testphone" element={<TestPhone />} />
           <Route path="/phone" element={<Phone />} />
           <Route path="/inputotp" element={<InputOTPForm />} />
           <Route path="/emailotp" element={<EmailVerification />} />

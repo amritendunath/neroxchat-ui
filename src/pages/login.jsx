@@ -6,11 +6,8 @@ import { useNavigate } from 'react-router-dom'  // Add this import at the top
 // import { Label } from "../components/ui/label"
 // import {Mail, GalleryVerticalEnd} from "lucide-react"
 import { Phone, Loader } from "lucide-react"
-import geneticSvg from '../genetic-data-svgrepo-com.svg'
-// import { LoginForm } from '../components/ui/login-form'
 import RightPanelContent from '../components/ui/rightpanel'
 import "../components/styles/App.css";
-import knot1 from "../knot1.png"
 import med44 from "../med44.jpeg"
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // import { faPhone } from '@fortawesome/free-solid-svg-icons';
@@ -52,7 +49,7 @@ const Login = () => {
       window.location.href = `${process.env.REACT_APP_POINT_AUTH}/login/${provider}`
     }
     else if (provider === 'phone') {
-      navigate('/phone') 
+      navigate('/phone')
     }
   }
 
@@ -86,7 +83,7 @@ const Login = () => {
   }
 
   const sendOtp = async () => {
-    const response = await fetch(`${process.env.REACT_APP_POINT_AUTH}/login/email`, {
+    await fetch(`${process.env.REACT_APP_POINT_AUTH}/login/email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,9 +116,9 @@ const Login = () => {
       const emailStatus = await statusEmail();
       const userStatus = await checkUser();
 
-      if (emailStatus == true) {
-        if (userStatus == true) {
-          const otpSent = await sendOtp();
+      if (emailStatus === true) {
+        if (userStatus === true) {
+          await sendOtp();
           navigate('/emailotp');
         }
         else {
@@ -194,7 +191,7 @@ const Login = () => {
 
             {/* Password Input - Uncommented and added classes */}
             <div className="flex justify-between items-center mb-2">
-              <a className="text-xs text-gray-400 hover:underline" href="#">
+              <a className="text-xs text-gray-400 hover:underline" href="/forgot-password">
               </a>
             </div>
             {/* Error message (optional, based on your state) */}
@@ -212,7 +209,7 @@ const Login = () => {
             >
               <div className="flex items-center justify-center">
 
-              {loading ? <Loader size={24} color="#fff" className="loader"/> : 'Continue'}
+                {loading ? <Loader size={24} color="#fff" className="loader" /> : 'Continue'}
               </div>
             </button>
             <div className="flex items-center mb-6"> {/* Added container classes */}
@@ -267,7 +264,7 @@ const Login = () => {
               </span>
 
             </button>
-{/* 
+            {/* 
             <button
               className="mt-4 flex items-center justify-center bg-[#121212] border border-gray-700 rounded-[32px] py-2 w-full transition-all duration-300 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:scale-[1.02] button-glow-google" // Updated button classes
               type="button"
@@ -320,7 +317,7 @@ const Login = () => {
             {/* Sign Up Link */}
             <p className="text-center text-gray-400 text-xs mt-8"> {/* Added paragraph classes */}
               Don't have an account?
-              <a className="underline hover:text-gray-200" href="#"> {/* Added link classes */}
+              <a className="underline hover:text-gray-200" href="/signup"> {/* Added link classes */}
                 Sign up
               </a>
             </p>

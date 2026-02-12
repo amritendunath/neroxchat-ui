@@ -15,7 +15,7 @@ const InputOTPForm = () => {
       navigate('/login')
       return
     }
-  }, [navigate])
+  }, [navigate, phoneNumber])
 
   const handleSubmit = async (e) => {
     e.preventDefault() // Add this to prevent form default submission
@@ -86,9 +86,9 @@ const InputOTPForm = () => {
     >
       <div className="text-center">
         <h1 className="text-2xl font-semibold mb-8 flex items-center justify-center">
-          <img 
-            src={geneticSvg} 
-            alt="Sathi Logo" 
+          <img
+            src={geneticSvg}
+            alt="Sathi Logo"
             className="w-8 h-8 mr-2"
           />
           <span className="animate-pulse text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">

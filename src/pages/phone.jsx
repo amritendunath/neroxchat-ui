@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react' // Import useEffect
 import { useNavigate } from 'react-router-dom'
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../components/ui/card"
-import { Label } from "../components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import geneticSvg from '../genetic-data-svgrepo-com.svg'
 // Import RecaptchaVerifier
 import { auth, signInWithPhoneNumber, RecaptchaVerifier } from '../services/firebase_config' // Ensure RecaptchaVerifier is exported from firebase_config
@@ -30,33 +29,33 @@ const Phone = ({ onLogin }) => {
           console.log("reCAPTCHA expired");
           // Optionally reset the reCAPTCHA here
           if (window.recaptchaVerifier && window.recaptchaVerifier.current) {
-             window.recaptchaVerifier.current.reset();
+            window.recaptchaVerifier.current.reset();
           }
         }
       });
       verifier.render().then((widgetId) => {
-         // Store the widget ID if needed, though not strictly necessary for invisible
-         console.log("reCAPTCHA rendered with widget ID:", widgetId);
+        // Store the widget ID if needed, though not strictly necessary for invisible
+        console.log("reCAPTCHA rendered with widget ID:", widgetId);
       });
       // Store the verifier instance globally or in state
       window.recaptchaVerifier = verifier; // Store globally for easy access
       setRecaptchaVerifier(verifier); // Also store in state
     } else {
-       // If already initialized, just set the state from the global variable
-       setRecaptchaVerifier(window.recaptchaVerifier);
+      // If already initialized, just set the state from the global variable
+      setRecaptchaVerifier(window.recaptchaVerifier);
     }
 
-     // Cleanup function to destroy reCAPTCHA on unmount if needed
-     // Note: For invisible reCAPTCHA, it might be okay to leave it,
-     // but for visible, you might want to clean up.
-     // return () => {
-     //   if (window.recaptchaVerifier && window.recaptchaVerifier.current) {
-     //     window.recaptchaVerifier.current.clear();
-     //     delete window.recaptchaVerifier;
-     //   }
-     // };
+    // Cleanup function to destroy reCAPTCHA on unmount if needed
+    // Note: For invisible reCAPTCHA, it might be okay to leave it,
+    // but for visible, you might want to clean up.
+    // return () => {
+    //   if (window.recaptchaVerifier && window.recaptchaVerifier.current) {
+    //     window.recaptchaVerifier.current.clear();
+    //     delete window.recaptchaVerifier;
+    //   }
+    // };
 
-  }, [auth]); // Depend on auth object
+  }, []); // Depend on auth object
 
 
   const validatePhone = (value) => {
@@ -76,9 +75,9 @@ const Phone = ({ onLogin }) => {
 
     // Ensure reCAPTCHA verifier is available
     if (!recaptchaVerifier) {
-        setError("reCAPTCHA not initialized. Please try again.");
-        console.error("reCAPTCHA verifier is null.");
-        return;
+      setError("reCAPTCHA not initialized. Please try again.");
+      console.error("reCAPTCHA verifier is null.");
+      return;
     }
 
     try {
@@ -104,17 +103,17 @@ const Phone = ({ onLogin }) => {
       if (err.code === 'auth/invalid-phone-number') {
         setError('Invalid phone number format.');
       } else if (err.code === 'auth/too-many-requests') {
-         setError('Too many requests. Please try again later.');
+        setError('Too many requests. Please try again later.');
       } else if (err.code === 'auth/captcha-check-failed') {
-         setError('reCAPTCHA verification failed. Please try again.');
+        setError('reCAPTCHA verification failed. Please try again.');
       }
       else {
         setError(err.message || 'Failed to send verification code.');
       }
-       // Reset reCAPTCHA if there was an error
-       if (window.recaptchaVerifier && window.recaptchaVerifier.current) {
-          window.recaptchaVerifier.current.reset();
-       }
+      // Reset reCAPTCHA if there was an error
+      if (window.recaptchaVerifier && window.recaptchaVerifier.current) {
+        window.recaptchaVerifier.current.reset();
+      }
     }
   }
 
@@ -187,9 +186,9 @@ const Phone = ({ onLogin }) => {
           </form>
         </CardContent>
       </Card>
-       {/* reCAPTCHA container - Firebase will render the invisible reCAPTCHA here */}
-       {/* Make sure this div is present in your HTML structure */}
-       <div id="recaptcha-container"></div>
+      {/* reCAPTCHA container - Firebase will render the invisible reCAPTCHA here */}
+      {/* Make sure this div is present in your HTML structure */}
+      <div id="recaptcha-container"></div>
     </div>
   )
 }

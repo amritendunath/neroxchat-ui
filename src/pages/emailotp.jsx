@@ -23,7 +23,7 @@ const EmailVerification = () => {
     }
     setEmail(storedEmail)
     setName(storedName)
-  }, [navigate])
+  }, [navigate, storedEmail, storedName])
 
 
   const handleVerify = async (e) => {
@@ -71,21 +71,6 @@ const EmailVerification = () => {
       setLoading(false)
     }
   };
-
-  const handleResendEmail = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_POINT_AUTH}/login/email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-    } catch (err) {
-      setError('Failed to resend verification email')
-    }
-  }
   const handleOAuthLogin = (provider) => {
     if (provider === 'google') {
       window.location.href = `${process.env.REACT_APP_POINT_AUTH}/login/${provider}`
@@ -169,7 +154,7 @@ const EmailVerification = () => {
                 <button
                   className='flex items-center justify-center flex:col w-1/2 border border-gray-700 rounded-[32px] py-2 mb-8 ml-3 transition-all duration-300 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:scale-[1.02]'
                   type="submit"
-                  // onClick={handleResendEmail}
+                // onClick={handleResendEmail}
                 >
                   {/* {loading ? <ClipLoader size={16} color="#fff" /> : 'Resend OTP'} */}
                   Resend OTP
@@ -280,7 +265,7 @@ const EmailVerification = () => {
             {/* Sign Up Link */}
             <p className="text-center text-gray-400 text-xs mt-8"> {/* Added paragraph classes */}
               Don't have an account?
-              <a className="underline hover:text-gray-200" href="#"> {/* Added link classes */}
+              <a className="underline hover:text-gray-200" href="/signup"> {/* Added link classes */}
                 Sign up
               </a>
             </p>

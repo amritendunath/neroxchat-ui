@@ -7,7 +7,7 @@ import { ClipLoader } from 'react-spinners';
 
 const NamePage = () => {
     const navigate = useNavigate()
-    const [verificationCode, setVerificationCode] = useState('')
+    const [verificationCode] = useState('')
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('')
     const [error, setError] = useState('')
@@ -21,7 +21,7 @@ const NamePage = () => {
             return
         }
         setEmail(storedEmail)
-    }, [navigate])
+    }, [navigate, storedEmail])
 
 
     const handleSendCode = async (e) => {
@@ -64,23 +64,7 @@ const NamePage = () => {
         }
     };
 
-    const handleResendEmail = async () => {
-        try {
-            const response = await fetch('http://localhost:5004/resend-verification', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            })
 
-            if (!response.ok) {
-                throw new Error('Failed to resend verification email')
-            }
-        } catch (err) {
-            setError('Failed to resend verification email')
-        }
-    }
     const handleOAuthLogin = (provider) => {
         if (provider === 'google') {
             window.location.href = `${process.env.REACT_APP_POINT_AUTH}/login/${provider}`
@@ -248,7 +232,7 @@ const NamePage = () => {
                         {/* Sign Up Link */}
                         <p className="text-center text-gray-400 text-xs mt-8"> {/* Added paragraph classes */}
                             Don't have an account?
-                            <a className="underline hover:text-gray-200" href="#"> {/* Added link classes */}
+                            <a className="underline hover:text-gray-200" href="/signup"> {/* Added link classes */}
                                 Sign up
                             </a>
                         </p>

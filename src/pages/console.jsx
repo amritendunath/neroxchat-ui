@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "@fortawesome/fontawesome-free/css/all.css";
 import "tailwindcss/tailwind.css";
 import "../components/styles/App.css";
@@ -10,7 +10,7 @@ import { CustomQuickResponseDropdown } from "../components/ui/modebutton";
 import MessageBubble from "../components/ui/message_markdown";
 import {
   Lightbulb, GraduationCap, PanelLeftOpen, PanelRightOpen, NotepadText,
-  PencilLine, HeartHandshake, LogOut, Loader, Code, Coffee
+  PencilLine, HeartHandshake, LogOut, Loader
 } from 'lucide-react';
 import AssistantService from "../AssistantService";
 import SendButton from '../components/ui/send_button'
@@ -25,9 +25,7 @@ const ChatUI = () => {
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
   const [responseType, setResponseType] = useState("quick");
-  const [showWelcome, setShowWelcome] = useState(true)
   const [welcomeMounted, setWelcomeMounted] = useState(true);
-  const [currentSessionId, setCurrentSessionId] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const startAccumulatedResponseRef = useRef("");
@@ -71,7 +69,6 @@ const ChatUI = () => {
   // Create a new view if new_session button has clicked in the @app-sidebar
   const handleNewSession = () => {
     setMessages([]);
-    setShowWelcome(true);
     setWelcomeMounted(true);
   };
 
@@ -165,7 +162,6 @@ const ChatUI = () => {
       );
       setHasStarted(true)
       setThreadId(data.thread_id);
-      const token = localStorage.getItem('token');
 
       // Reset the accumulated response ref for this session
       startAccumulatedResponseRef.current = "";
@@ -176,7 +172,7 @@ const ChatUI = () => {
       // ]);
 
       // Start streaming the response
-      const eventSource = AssistantService.streamResponse(
+      AssistantService.streamResponse(
         data.thread_id,
         (data) => {
           if (data && data.content) {
@@ -237,10 +233,8 @@ const ChatUI = () => {
 
   // Refresh the chat_history if new chat_session has been created
   const handleSelectChatSession = (sessionId) => {
-    setCurrentSessionId(sessionId);
     setMessages([]); // Clear current messages
     setLoading(false);
-    setShowWelcome(false)
     setWelcomeMounted(false)
     fetch(`${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/chat-history/${sessionId}`, {
       method: 'GET',
@@ -334,25 +328,7 @@ const ChatUI = () => {
       return { answer: "Error retrieving response" };
     }
   };
-  const handleSendMessage = async () => {
-    const userMessage = {
-      name: 'User',
-      message: input
-    }
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('')
-    const messageToSend = {
-      name: userMessage.name,
-      messages: userMessage.message
-    }
-    const response_data = await makeApiCall(messageToSend.messages);
-    const answer = response_data.answer || "No response from API";
-    const botMessage = {
-      name: 'Sathi',
-      message: answer,
-    };
-    setMessages((prev) => [...prev, botMessage]);
-  }
+
   return (
 
     // <div className="h-screen w-full flex bg-[#0f1117] border-4 border-red-500" >
@@ -509,8 +485,7 @@ const ChatUI = () => {
                       key={idx}
                       onClick={(e) => {
                         if (item.prompt) {
-                          const syntheticEvent = { target: { textContent: item.prompt } };
-                          startSSE(syntheticEvent);
+                          startSSE({ target: { textContent: item.prompt } });
                         }
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-[#161b22]/80 hover:bg-[#2d3342] border border-[#363b49] hover:border-gray-400 rounded-full transition-all duration-200 group"
@@ -646,9 +621,7 @@ const ChatUI = () => {
 
 
 export default ChatUI;
-// ... existing code ...
 
-{/* Messages Area */ }
 // <div className="flex-1">
 //   <div className="h-screen flex flex-col">
 //     <div className="flex-1 overflow-y-auto">

@@ -152,13 +152,13 @@ module.exports = {
       },
       keyframes: {
         glow: {
-          '0%, 100%': { 
+          '0%, 100%': {
             opacity: 1,
-            transform: 'translate(0, 0) scale(1)' 
+            transform: 'translate(0, 0) scale(1)'
           },
-          '50%': { 
+          '50%': {
             opacity: 0.8,
-            transform: 'translate(20px, -20px) scale(1.05)' 
+            transform: 'translate(20px, -20px) scale(1.05)'
           },
         }
       },

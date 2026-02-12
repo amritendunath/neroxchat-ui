@@ -10,10 +10,11 @@ import { CustomQuickResponseDropdown } from "../components/ui/modebutton";
 import MessageBubble from "../components/ui/message_markdown";
 import {
   Lightbulb, GraduationCap, PanelLeftOpen, PanelRightOpen, NotepadText,
-  PencilLine, HeartHandshake, LogOut, Loader
+  PencilLine, HeartHandshake, LogOut, Loader, Code, Coffee
 } from 'lucide-react';
 import AssistantService from "../AssistantService";
 import SendButton from '../components/ui/send_button'
+import AnimatedKnot from "../components/ui/animated_knot";
 
 
 
@@ -32,7 +33,7 @@ const ChatUI = () => {
   const startAccumulatedResponseRef = useRef("");
   const [hasStarted, setHasStarted] = useState(false)
   const [threadId, setThreadId] = useState('')
-  const [logoutload, setLodoutLoad]=useState(false)
+  const [logoutload, setLodoutLoad] = useState(false)
 
 
 
@@ -137,7 +138,9 @@ const ChatUI = () => {
       setShowWelcome(false);
       setTimeout(() => {
         setWelcomeMounted(false);
-        setMessages((prev) => [...prev, userMessage]);
+        if (!e?.skipUserMessage) {
+          setMessages((prev) => [...prev, userMessage]);
+        }
         setInput('');
         if (textareaRef.current) {
           textareaRef.current.style.height = '20px';
@@ -145,7 +148,9 @@ const ChatUI = () => {
         setLoading(true);
       }, 200);
     } else {
-      setMessages((prev) => [...prev, userMessage]);
+      if (!e?.skipUserMessage) {
+        setMessages((prev) => [...prev, userMessage]);
+      }
       setInput('');
       if (textareaRef.current) {
         textareaRef.current.style.height = '20px';
@@ -351,7 +356,7 @@ const ChatUI = () => {
   return (
 
     // <div className="h-screen w-full flex bg-[#0f1117] border-4 border-red-500" >
-    <div className="h-screen w-screen flex bg-[#0f1117] " >
+    <div className="h-screen w-screen flex bg-[#0f1117] overflow-hidden">
       <div className="pointer-events-none fixed inset-0" aria-hidden>
         {/* Top center animated glow */}
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-gradient-to-br from-sky-400/10 via-blue-500/10 to-indigo-400/5 blur-[140px] animate-glow" />
@@ -367,16 +372,11 @@ const ChatUI = () => {
       {isMobile && isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20"
-          // className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={closeSidebar}
         />
       )}
       {/* Sidebar */}
       <div
-        // className={`
-        // w-64 bg-muted flex flex-col transition-all duration-300
-        // ${isMobile ? `fixed z-30 h-full ${isOpen ? 'translate-x-0' : '-translate-x-full'}` : 'relative'}
-        // `}
         className={`w-64 h-full bg-muted flex flex-col transition-transform duration-300 fixed z-30 
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
         }
@@ -390,253 +390,255 @@ const ChatUI = () => {
 
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col bg-[#0f1117] text-white w-full">
+      <div className="flex-1 flex flex-col bg-[#0f1117] text-white w-full relative h-full">
         {/* Navbar */}
-        {/* <div className="fixed top-0 left-0 right-0 z-40">
+        <div className="fixed flex items-center top-0 left-0 right-0 z-10 pointer-events-none">
+          <div className="pointer-events-auto">
+            {isMobile && (
+              <>
+                {isOpen ? (
+                  null
+                ) : (
 
-        </div> */}
-        <div className="fixed flex items-center top-0 left-0 right-0 z-10">
-          {isMobile && (
-            <>
-              {isOpen ? (
-                null
-              ) : (
+                  <button
+                    className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
+                    onClick={() => setIsOpen(prev => !prev)}
+                  >
+                    <PanelLeftOpen size={22} />
+                  </button>
+                )}
+              </>
+            )}
+            {!isMobile && (
+              <>
+                {isOpen ? (
+                  <button
+                    className="translate-x-64 text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none "
+                    onClick={() => setIsOpen(prev => !prev)}
+                  >
+                    <PanelRightOpen size={22} />
+                  </button>
+                ) : (
 
-                <button
-                  className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
-                  onClick={() => setIsOpen(prev => !prev)}
-                >
-                  <PanelLeftOpen size={22} />
-                </button>
-              )}
-            </>
-          )}
-          {!isMobile && (
-            <>
-              {isOpen ? (
-                <button
-                  className="translate-x-64 text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none "
-                  onClick={() => setIsOpen(prev => !prev)}
-                >
-                  <PanelRightOpen size={22} />
-                </button>
-              ) : (
-
-                <button
-                  className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
-                  onClick={() => setIsOpen(prev => !prev)}
-                >
-                  <PanelLeftOpen size={22} />
-                </button>
-              )}
-            </>
-          )}
+                  <button
+                    className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
+                    onClick={() => setIsOpen(prev => !prev)}
+                  >
+                    <PanelLeftOpen size={22} />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
           <button
             onClick={handleLogout}
-            // className="ml-auto p-3 rounded-full transition-colors button-hover hover:text-red-200">
-            className="absolute top-0 right-0 m-1 mr-2 p-3 rounded-full">
-            {logoutload ? <Loader size={20} className="loader"/> : <LogOut size={20} />}
+            className="absolute top-0 right-0 m-1 mr-2 p-3 rounded-full pointer-events-auto">
+            {logoutload ? <Loader size={20} className="loader" /> : <LogOut size={20} />}
           </button>
         </div>
 
 
-        {/* Welcome screen overlay */}
-        {welcomeMounted && (messages.length === 0 || input === 300) && input.length <= 300 && (
-          // <div
-          //   className={`text-center w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto justify-center mt-24 sm:mt-40 md:mt-[40px] lg:mt-[80px] transition-opacity duration-500 ease-in-out
-          //     ${showWelcome ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
-          //   `}
-          // >
+        {/* Centered Welcome / Input Container */}
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 w-full h-full overflow-y-auto">
+            <div className="w-full max-w-3xl flex flex-col items-center space-y-8">
+              {/* Greeting */}
+              <div className="flex flex-col items-center space-y-2">
+                <AnimatedKnot className="w-24 h-24 sm:w-32 sm:h-32 mb-2" />
+                <h1 className="text-white font-semibold text-2xl sm:text-4xl mt-4 px-4 text-center">
+                  {getGreetingUI()}, {userName.split(" ")[0]}
+                </h1>
+                <h2 className="text-gray-400/80 font-medium text-xl">
+                  What can I help you with today?
+                </h2>
+              </div>
 
-          <div
-            className={`fixed flex items-center justify-center h-[calc(100vh-130px)] w-full px-4 transition-opacity duration-500 ease-in-out
-              ${showWelcome ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-          >
-            <div className="text-center max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-3xl">
-              <h1 className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl leading-tight mb-2">
-                {getGreetingUI()}, {userName.split(" ")[0]}
-              </h1>
-              <h2 className="text-white font-semibold text-lg sm:text-xl md:text-2xl leading-tight mb-6">
-                What can I help you with today?
-              </h2>
-              {/* <div className="flex-1 flex items-center justify-center p-8">
-                <div className="max-w-3xl text-center">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4 max-w-2xl mx-auto"> */}
-              <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8">
-                <div className="max-w-sm sm:max-w-2xl md:max-w-3xl text-center">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-w-sm sm:max-w-2xl mx-auto">
-
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) => {
-                        startSSE(e);
+              {/* Input Area (Centered) */}
+              <div className="w-full max-w-2xl">
+                <div className="bg-[#0B0E17] rounded-[24px] p-4 shadow-2xl border border-[#181B24] ring-1 ring-white/5">
+                  <div className="flex flex-col">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onInput={e => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
                       }}
-                    >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex">
-                          <Lightbulb className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-yellow-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Brainstroms
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">
-                          Brainstorm creative solutions like you want
-                        </p>
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          startSSE()
+                        }
+                      }}
+                      placeholder="Ask anything..."
+                      rows={1}
+                      className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-3 placeholder-gray-500/70 resize-none overflow-hidden"
+                      style={{ minHeight: '24px', maxHeight: '200px' }}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <CustomQuickResponseDropdown
+                      value={responseType}
+                      onChange={setResponseType}
+                    />
+                    <SendButton
+                      isStarting={hasStarted}
+                      input={input}
+                      startSSE={startSSE}
+                      stopSSE={stopSSE}
+                    />
+                  </div>
+                </div>
+              </div>
 
-                      </div>
-                    </div>
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) =>
-                        startSSE(e)
-                      }
+              {/* Suggestions Chips */}
+              {/* Suggestions Chips */}
+              <div className="w-full max-w-3xl px-4">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {[
+                    { icon: Lightbulb, color: "text-yellow-500", title: "Brainstorm", prompt: "Brainstorm creative solutions for..." },
+                    { icon: HeartHandshake, color: "text-blue-500", title: "Health", prompt: "Give me some health tips for..." },
+                    { icon: GraduationCap, color: "text-green-500", title: "Learn", prompt: "Explain the concept of..." },
+                    { icon: NotepadText, color: "text-violet-500", title: "Quiz", prompt: "Create a quiz about..." },
+                    { icon: PencilLine, color: "text-pink-500", title: "Advice", prompt: "I need advice on..." },
+                    { icon: HiOutlineLightBulb, color: "text-cyan-500", title: "Plan", prompt: "Help me plan my day..." },
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        if (item.prompt) {
+                          const syntheticEvent = { target: { textContent: item.prompt } };
+                          startSSE(syntheticEvent);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#161b22]/80 hover:bg-[#2d3342] border border-[#363b49] hover:border-gray-400 rounded-full transition-all duration-200 group"
                     >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex">
-                          <HeartHandshake className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-blue-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Heart help
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">
-                          Diagnose your heart and body
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) =>
-                        startSSE(e)
-                      }
-                    >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex"
+                      <item.icon className={`w-4 h-4 ${item.color}`} />
+                      <span className="text-sm font-medium text-gray-200 group-hover:text-white">{item.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                        >
-                          <GraduationCap className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-green-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Learn more
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">Understand complex topics</p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) =>
-                        startSSE(e)
-                      }
-                    >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex"
+            </div>
+          </div>
+        ) : (
+          /* Chat Interface (Input at Bottom) */
+          <>
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent pb-32">
+              <div className="max-w-3xl mx-auto w-full pt-20 px-4">
+                <div className="message-wrapper space-y-6">
+                  {messages.map((msg, index) => {
+                    const isLastAssistantMessage = index === messages.length - 1 && msg.name !== 'User';
+                    return (typeof msg.message === 'string') ? (
+                      <MessageBubble
+                        key={index}
+                        message={{
+                          role: msg.name === 'User' ? 'user' : 'assistant',
+                          content: msg.message
+                        }}
+                        isLast={isLastAssistantMessage}
+                        onRetry={(mode) => {
+                          // 1. Set the response type mode
+                          setResponseType(mode === 'quick' ? 'quick_response' : 'think_deeper');
 
-                        >
-                          <NotepadText className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-violet-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Take a quiz
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">Quiz on the topics you like</p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) =>
-                        startSSE(e)
-                      }
-                    >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex"
-
-                        >
-                          <PencilLine className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-pink-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Get advice
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">Get advice on topics you like</p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-2 border-[#363C4D] border-opacity-60 rounded-[32px] hover:bg-[#1f212c] cursor-pointer transition-colors"
-                      onClick={(e) =>
-                        startSSE(e)
-                      }
-                    >
-                      <div className="text-left">
-                        <h3 className="font-medium mb-1 flex"
-                          onClick={(e) =>
-                            startSSE(e)
+                          // 2. Find the last user message to re-send
+                          // We need to look backwards from this message
+                          let lastUserMessage = "";
+                          for (let i = index - 1; i >= 0; i--) {
+                            if (messages[i].name === 'User') {
+                              lastUserMessage = messages[i].message;
+                              break;
+                            }
                           }
-                        >
-                          <HiOutlineLightBulb className="h-5 w-5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-cyan-500 mb-1 sm:mb-2 mr-1 sm:mr-2" />
-                          Make a plan
-                        </h3>
-                        <p className="text-xs sm:text-sm md:text-sm text-muted-foreground">Plans that make a day more</p>
+
+                          if (lastUserMessage) {
+                            // 3. Remove this assistant message and any subsequent messages (if any)
+                            // Actually, better to just reset messages to up to the point before this one
+                            setMessages(prev => prev.slice(0, index));
+
+                            // 4. Trigger SSE with the last user message
+                            // We need to simulate the event object that startSSE expects
+                            const syntheticEvent = { target: { textContent: lastUserMessage } };
+                            // Or if startSSE handles raw strings, we can pass it directly. 
+                            // Looking at code, startSSE uses `input` state or the event textContent.
+                            // Let's set input content and call startSSE
+                            setInput(lastUserMessage);
+
+                            // We need a slight timeout to allow state updates or just call logic directly
+                            // However, startSSE might rely on 'input' state. 
+                            // Safety: Let's assume startSSE needs to be called with the text.
+                            // But startSSE definition isn't fully visible.
+                            // Let's look at how suggestions use it: 
+                            // startSSE({ target: { textContent: item.prompt } })
+                            startSSE({ target: { textContent: lastUserMessage } });
+                          }
+                        }}
+                      />
+                    ) : null
+                  })}
+                  {loading && (
+                    <div className="flex justify-start px-4">
+                      <div className="typing-indicator flex space-x-1">
+                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
+                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></span>
+                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></span>
                       </div>
                     </div>
-                  </div>
+                  )}
+                  <div ref={messagesEndRef} className="h-4" />
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Input Area (Bottom Fixed) */}
+            <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0f1117] via-[#0f1117] to-transparent pt-10 pb-6 px-4 z-20">
+              <div className="max-w-3xl mx-auto w-full">
+                <div className="bg-[#0B0E17] rounded-[24px] p-4 shadow-2xl border border-[#181B24] ring-1 ring-white/5">
+                  <div className="flex flex-col">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onInput={e => {
+                        e.target.style.height = 'auto'; // Reset height
+                        e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; // Set new height, max 200px
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          startSSE()
+                        }
+                      }}
+                      placeholder="Ask anything..."
+                      rows={1}
+                      className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-2 placeholder-gray-500/70 resize-none overflow-y-auto custom-scrollbar"
+                      style={{ minHeight: '24px', maxHeight: '200px' }}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <CustomQuickResponseDropdown
+                      value={responseType}
+                      onChange={setResponseType}
+                    />
+                    <SendButton
+                      isStarting={hasStarted}
+                      input={input}
+                      startSSE={startSSE}
+                      stopSSE={stopSSE}
+                    />
+                  </div>
+                </div>
+                <div className="text-center mt-2">
+                  <p className="text-xs text-gray-600">AI can make mistakes. Please verify important information.</p>
+                </div>
+              </div>
+            </div>
+          </>
         )}
-        {/* Messages Area */}
-        {/* sm:mt-8 md:mt-10 mb-[120px] sm:mb-[140px] md:mb-[150px] */}
-        <div className="">
-          <div className=" mt-10 sm:p-4 sm:space-y-2 md:space-y-4 max-w-4xl mx-auto text-gray-200 text-[15px] md:text-[16px] mb-10">
-            {/* <div className="flex-1 overflow-auto scrollbar">
-          <div className=" mt-10 sm:mt-12 md:mt-15 mb-[120px] sm:mb-[140px] md:mb-[150px]  p-2 sm:p-4 md:space-y-4 max-w-full sm:max-w-3xl md:max-w-4xl mx-auto text-gray-200 text-sm sm:text-sm md:text-[14px]"> */}
-            <div className="message-wrapper">
-              {messages.map((msg, index) => (
-                (typeof msg.message === 'string') ? (
-                  <MessageBubble
-                    message={{
-                      role: msg.name === 'User' ? 'user' : 'assistant',
-                      content: msg.message
-                    }}
-                  />
-                ) : null))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-        </div>
-
-        {/* Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0f1117] via-[#0f1117]/90 to-transparent">
-          {/* <div className="p-6 max-w-2xl mx-auto"> */}
-          <div className="p-3 sm:p-4 md:p-6 max-w-full sm:max-w-xl md:max-w-2xl mx-auto">
-            <div className="bg-[#0B0E17] rounded-[32px] p-[18px] mb-[10px] shadow-[0_3px_20px_0_rgba(40,50,70,0.95)] border border-[#181B24]">
-              <div className="flex flex-col">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-
-                  onInput={e => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      startSSE()
-                    }
-                  }}
-                  placeholder="Ask anything"
-                  rows={1}
-                  className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-sm mb-2 placeholder-gray-500 placeholder:font-semibold resize-none overflow-hidden scrollbar-input_box"
-                  style={{ minHeight: '20px', maxHeight: '420px' }}
-                />
-              </div>
-              <div className="flex gap-2 ">
-                <CustomQuickResponseDropdown
-                  value={responseType}
-                  onChange={setResponseType}
-                />
-                <SendButton
-                  isStarting={hasStarted}
-                  input={input}
-                  startSSE={startSSE}
-                  stopSSE={stopSSE}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
       </div >
     </div >
   );
@@ -646,36 +648,36 @@ const ChatUI = () => {
 export default ChatUI;
 // ... existing code ...
 
-        {/* Messages Area */}
-        // <div className="flex-1">
-        //   <div className="h-screen flex flex-col">
-        //     <div className="flex-1 overflow-y-auto">
-        //       <div className="mt-10 sm:p-4 sm:space-y-2 md:space-y-4 max-w-4xl mx-auto text-gray-200 text-[14px]">
-        //         <div className="message-wrapper">
-        //           {messages.map((msg, index) => (
-        //             (typeof msg.message === 'string') ? (
-        //               <MessageBubble
-        //                 message={{
-        //                   role: msg.name === 'User' ? 'user' : 'assistant',
-        //                   content: msg.message
-        //                 }}
-        //               />
-        //             ) : null))}
-        //           {loading && (
-        //             <div className="flex justify-start">
-        //               <div className="typing-indicator">
-        //                 <span></span>
-        //                 <span></span>
-        //                 <span></span>
-        //               </div>
-        //             </div>
-        //           )}
-        //           <div ref={messagesEndRef} />
-        //         </div>
-        //       </div>
-        //     </div>
-        //   </div>
-        // </div>
+{/* Messages Area */ }
+// <div className="flex-1">
+//   <div className="h-screen flex flex-col">
+//     <div className="flex-1 overflow-y-auto">
+//       <div className="mt-10 sm:p-4 sm:space-y-2 md:space-y-4 max-w-4xl mx-auto text-gray-200 text-[14px]">
+//         <div className="message-wrapper">
+//           {messages.map((msg, index) => (
+//             (typeof msg.message === 'string') ? (
+//               <MessageBubble
+//                 message={{
+//                   role: msg.name === 'User' ? 'user' : 'assistant',
+//                   content: msg.message
+//                 }}
+//               />
+//             ) : null))}
+//           {loading && (
+//             <div className="flex justify-start">
+//               <div className="typing-indicator">
+//                 <span></span>
+//                 <span></span>
+//                 <span></span>
+//               </div>
+//             </div>
+//           )}
+//           <div ref={messagesEndRef} />
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// </div>
 
 // ... existing code ...
 

@@ -293,41 +293,7 @@ const ChatUI = () => {
   //   return () => window.removeEventListener('resize', handleResize)
   // }, [])
 
-  const makeApiCall = async (prompt) => {
-    const API_URL = `${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/`;
-    const token = localStorage.getItem('token');
 
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
-
-    try {
-      const response = await axios.post(API_URL,
-        {
-          query: prompt,
-          queryModeType: responseType
-        },
-        {
-          headers: {
-            'X-THREAD-ID': threadId,
-            'Authorization': `Bearer ${token}`
-          },
-          timeout: 60000
-        }
-      );
-      return response.data;
-    } catch (error) {
-      if (error.response && error.response.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
-      console.error('API Error:', error);
-      return { answer: "Error retrieving response" };
-    }
-  };
 
   return (
 
@@ -536,7 +502,6 @@ const ChatUI = () => {
 
                             // 4. Trigger SSE with the last user message
                             // We need to simulate the event object that startSSE expects
-                            const syntheticEvent = { target: { textContent: lastUserMessage } };
                             // Or if startSSE handles raw strings, we can pass it directly. 
                             // Looking at code, startSSE uses `input` state or the event textContent.
                             // Let's set input content and call startSSE

@@ -12,6 +12,7 @@ export function AppSidebar({ onSelectChatSession, onNewSessionClick, onCurrentSe
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [userId, setUserId] = useState('')
+  const token = localStorage.getItem('token');
   useEffect(() => {
     if (!token) {
       window.location.href = '/login';
@@ -35,7 +36,7 @@ export function AppSidebar({ onSelectChatSession, onNewSessionClick, onCurrentSe
     }
   }, [token]);
   const [userImage, setUserImage] = useState('')
-  const token = localStorage.getItem('token');
+
   const [loading, setLoading] = useState(false)
   const [selectedSession, setSelectedSession] = useState(null);
   useEffect(() => {

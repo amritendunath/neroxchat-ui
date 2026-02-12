@@ -90,7 +90,7 @@ const ChatUI = () => {
       }
       // Clear current session state
       setMessages([]);
-      setCurrentSessionId(null);
+      setMessages([]);
 
     } catch (error) {
       console.error('Error ending session:', error);
@@ -132,7 +132,7 @@ const ChatUI = () => {
     };
 
     if (welcomeMounted) {
-      setShowWelcome(false);
+
       setTimeout(() => {
         setWelcomeMounted(false);
         if (!e?.skipUserMessage) {

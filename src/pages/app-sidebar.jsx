@@ -11,6 +11,7 @@ export function AppSidebar({ onSelectChatSession, onNewSessionClick, onCurrentSe
   const [appointments, setAppointments] = useState([]);
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [userId, setUserId] = useState('')
   useEffect(() => {
     if (!token) {
       window.location.href = '/login';

@@ -30,7 +30,7 @@ const ChatUI = () => {
   const textareaRef = useRef(null);
   const startAccumulatedResponseRef = useRef("");
   const [hasStarted, setHasStarted] = useState(false)
-  const [threadId, setThreadId] = useState('')
+
   const [logoutload, setLodoutLoad] = useState(false)
 
 
@@ -161,7 +161,7 @@ const ChatUI = () => {
         responseType
       );
       setHasStarted(true)
-      setThreadId(data.thread_id);
+
 
       // Reset the accumulated response ref for this session
       startAccumulatedResponseRef.current = "";

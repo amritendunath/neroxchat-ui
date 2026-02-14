@@ -16,7 +16,7 @@
 // import { auth } from './services/firebase_config';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Chatbox from "./pages/console";
+import Console from "./pages/console";
 import Login from './pages/login';
 import AuthCallback from './pages/AuthCallback';
 import ProtectedRoute from './pages/ProtectedRoute';
@@ -56,11 +56,11 @@ const App = () => {
           <Route path="/emailotp" element={<EmailVerification />} />
           <Route path="/auth-callback" element={<AuthCallback />} />
           <Route
-            path="/chatbox"
+            path="/Console"
             element={
               <ProtectedRoute>
                 <SidebarProvider>
-                  <Chatbox />
+                  <Console />
                 </SidebarProvider>
               </ProtectedRoute>
             }

@@ -41,7 +41,7 @@ const App = () => {
   // }, []);
 
   const handlelogin = (token) => {
-    window.location.href = '/chatbox';  // Fixed 'windows' to 'window'
+    window.location.href = '/console';  // Updated from '/chatbox' to '/console'
   }
 
   return (
@@ -56,7 +56,7 @@ const App = () => {
           <Route path="/emailotp" element={<EmailVerification />} />
           <Route path="/auth-callback" element={<AuthCallback />} />
           <Route
-            path="/Console"
+            path="/console"
             element={
               <ProtectedRoute>
                 <SidebarProvider>

@@ -13,20 +13,20 @@ const AuthCallback = () => {
             // Store the token securely
             localStorage.setItem('token', token);
             // Redirect to chatbox
-            navigate('/chatbox');
+            navigate('/console');
         } else if (error) {
             // Handle error with more context
-            navigate('/login', { 
-                state: { 
-                    error: 'Authentication failed. Please try again.' 
-                } 
+            navigate('/login', {
+                state: {
+                    error: 'Authentication failed. Please try again.'
+                }
             });
         } else {
             // Handle case where neither token nor error is present
-            navigate('/login', { 
-                state: { 
-                    error: 'Invalid authentication response' 
-                } 
+            navigate('/login', {
+                state: {
+                    error: 'Invalid authentication response'
+                }
             });
         }
     }, [searchParams, navigate]);

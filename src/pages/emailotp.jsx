@@ -57,7 +57,7 @@ const EmailVerification = () => {
       } else {
         console.warn("No token received from the server")
       }
-      navigate('/chatbox');
+      navigate('/console');
     } catch (err) {
       if (!window.navigator.onLine) {
         setError('Please check your internet connection');

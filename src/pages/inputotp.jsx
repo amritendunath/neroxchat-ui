@@ -43,7 +43,7 @@ const InputOTPForm = () => {
       }
 
       localStorage.setItem('token', result.access_token)
-      navigate('/chatbox')
+      navigate('/console')
     } catch (error) {
       console.error('OTP verification failed:', error)
       setError(error.message)

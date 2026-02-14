@@ -6,7 +6,7 @@ const agent_dict = {
     'appointment_info': 'appointment_agent',
     'primary_assistant': 'supervisor_agent',
     'medical_info': 'medical_assistant',
-    'hospital_info': 'hospital_assistant' 
+    'hospital_info': 'hospital_assistant'
 };
 
 const ChatUI = () => {
@@ -20,14 +20,15 @@ const ChatUI = () => {
     }, []);
 
     const makeApiCall = async (prompt) => {
-        const API_URL = "http://localhost:8000/api/v1/generate-stream/";
-        
+        const BASE_URL = process.env.REACT_APP_POINT_AGENT || "http://localhost/api/agent";
+        const API_URL = `${BASE_URL}/api/v1/generate-stream/`;
+
         try {
-            const response = await axios.post(API_URL, 
+            const response = await axios.post(API_URL,
                 { query: prompt },
-                { 
+                {
                     headers: { 'X-THREAD-ID': threadId },
-                    timeout: 60000 
+                    timeout: 60000
                 }
             );
             return response.data;
@@ -78,7 +79,7 @@ const ChatUI = () => {
                     </div>
                 ))}
             </div>
-            
+
             <form onSubmit={handleSubmit} className="input-form">
                 <input
                     type="text"

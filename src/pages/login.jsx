@@ -165,7 +165,7 @@ const Login = () => {
               className="w-10 h-10"
             />
             <span className="font-semibold text-white text-[20px] leading-none"> {/* Added text classes */}
-              Med44
+              neroxchat
             </span>
           </div>
 

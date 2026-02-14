@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AUTH_URL } from '../utils/apiConfig';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -16,7 +17,7 @@ const EmailVerification = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5004/send-email-verification', {
+      const response = await fetch(`${AUTH_URL}/send-email-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ const EmailVerification = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5004/verify-email', {
+      const response = await fetch(`${AUTH_URL}/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

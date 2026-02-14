@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import geneticSvg from '../genetic-data-svgrepo-com.svg'
+import { AUTH_URL } from '../utils/apiConfig'
 
 const InputOTPForm = () => {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ const InputOTPForm = () => {
         throw new Error('Phone number not found. Please try again.')
       }
 
-      const response = await fetch('http://localhost:5004/verify-code', {
+      const response = await fetch(`${AUTH_URL}/verify-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +57,7 @@ const InputOTPForm = () => {
         throw new Error('Phone number not found')
       }
 
-      const response = await fetch('http://localhost:5004/send-verification', {
+      const response = await fetch(`${AUTH_URL}/send-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

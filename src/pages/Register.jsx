@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Label } from "./ui/label"
 import { Phone } from "lucide-react"
 import { useNavigate } from 'react-router-dom'
+import { AUTH_URL } from '../utils/apiConfig'
 
 const Register = () => {
   const [email, setEmail] = useState('')
@@ -40,7 +41,7 @@ const Register = () => {
   }
 
   const handleOAuthLogin = (provider) => {
-    window.location.href = `http://localhost:5004/register/${provider}`
+    window.location.href = `${AUTH_URL}/register/${provider}`
   }
 
   return (
@@ -61,7 +62,7 @@ const Register = () => {
         </CardHeader>
         <CardContent className="grid gap-2 p-0">
           <div className="grid grid-cols-2 gap-3">
-          <Button
+            <Button
               variant="outline"
               // onClick={() => handleOAuthLogin('phone')}
               className="rounded-[32px] w-full transition-all duration-300 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:scale-[1.02] button-glow-google"

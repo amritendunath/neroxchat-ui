@@ -56,11 +56,11 @@ export function CustomQuickResponseDropdown({ value, onChange }) {
                                     <div className="flex items-center">
                                         {option.icon}
                                         <div>
-                                            <p className="font-serif text-base leading-5 flex items-center text-gray-200">
+                                            <p className="text-base leading-5 flex items-center text-gray-200">
                                                 {option.label}
                                                 {option.badge}
                                             </p>
-                                            <p className="font-serif text-[#a3b0d9] text-xs leading-4 mt-[2px]">
+                                            <p className="text-[#a3b0d9] text-xs leading-4 mt-[2px]">
                                                 {option.info}
                                             </p>
                                         </div>

@@ -10,7 +10,7 @@ import { CustomQuickResponseDropdown } from "../components/ui/modebutton";
 import MessageBubble from "../components/ui/message_markdown";
 import {
   Lightbulb, GraduationCap, PanelLeftOpen, PanelRightOpen, NotepadText,
-  PencilLine, HeartHandshake, LogOut, Loader
+  PencilLine, HeartHandshake, LogOut, Loader, Mic, Plus, Globe
 } from 'lucide-react';
 import AssistantService from "../AssistantService";
 import SendButton from '../components/ui/send_button'
@@ -421,16 +421,38 @@ const ChatUI = () => {
                     />
                   </div>
                   <div className="flex justify-between items-center pt-2">
-                    <CustomQuickResponseDropdown
-                      value={responseType}
-                      onChange={setResponseType}
-                    />
-                    <SendButton
-                      isStarting={hasStarted}
-                      input={input}
-                      startSSE={startSSE}
-                      stopSSE={stopSSE}
-                    />
+                    <div className="flex items-center gap-1">
+                      <CustomQuickResponseDropdown
+                        value={responseType}
+                        onChange={setResponseType}
+                      />
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Attach files"
+                      >
+                        <Plus className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Web search"
+                      >
+                        <Globe className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Voice input"
+                      >
+                        <Mic className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                      <SendButton
+                        isStarting={hasStarted}
+                        input={input}
+                        startSSE={startSSE}
+                        stopSSE={stopSSE}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -560,16 +582,38 @@ const ChatUI = () => {
                     />
                   </div>
                   <div className="flex justify-between items-center pt-2">
-                    <CustomQuickResponseDropdown
-                      value={responseType}
-                      onChange={setResponseType}
-                    />
-                    <SendButton
-                      isStarting={hasStarted}
-                      input={input}
-                      startSSE={startSSE}
-                      stopSSE={stopSSE}
-                    />
+                    <div className="flex items-center gap-1">
+                      <CustomQuickResponseDropdown
+                        value={responseType}
+                        onChange={setResponseType}
+                      />
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Attach files"
+                      >
+                        <Plus className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Web search"
+                      >
+                        <Globe className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        title="Voice input"
+                      >
+                        <Mic className="w-5 h-5" strokeWidth={2.4} />
+                      </button>
+                      <SendButton
+                        isStarting={hasStarted}
+                        input={input}
+                        startSSE={startSSE}
+                        stopSSE={stopSSE}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="text-center mt-2">

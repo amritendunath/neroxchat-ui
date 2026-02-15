@@ -594,8 +594,12 @@ const ChatUI = () => {
                         <Plus className="w-5 h-5" strokeWidth={2.4} />
                       </button>
                       <button
-                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border ${responseType === 'web_search'
+                            ? 'text-blue-400 bg-white/10 border-blue-400/50'
+                            : 'text-zinc-400 hover:text-white hover:bg-white/10 border-white/10 hover:border-white/20'
+                          }`}
                         title="Web search"
+                        onClick={() => setResponseType(prev => prev === 'web_search' ? 'quick' : 'web_search')}
                       >
                         <Globe className="w-5 h-5" strokeWidth={2.4} />
                       </button>

@@ -9,8 +9,8 @@ import axios from "axios";
 import { CustomQuickResponseDropdown } from "../components/ui/modebutton";
 import MessageBubble from "../components/ui/message_markdown";
 import {
-  Lightbulb, GraduationCap, PanelLeftOpen, PanelRightOpen, NotepadText,
-  PencilLine, HeartHandshake, LogOut, Loader, Mic, Plus, Globe
+  Lightbulb, GraduationCap, Sidebar, PanelLeftClose, NotepadText,
+  PencilLine, HeartHandshake, LoaderCircle, Mic, Plus, Globe, X, Check
 } from 'lucide-react';
 import AssistantService from "../AssistantService";
 import SendButton from '../components/ui/send_button'
@@ -23,16 +23,261 @@ const ChatUI = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [waveformLevels, setWaveformLevels] = useState(() => Array.from({ length: 120 }, () => 3));
+  const [toolStatus, setToolStatus] = useState("");
   const [userName, setUserName] = useState('');
   const [responseType, setResponseType] = useState("quick");
+  const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
   const [welcomeMounted, setWelcomeMounted] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const startAccumulatedResponseRef = useRef("");
+  const speechRecognitionRef = useRef(null);
+  const speechBaseInputRef = useRef("");
+  const speechFinalTextRef = useRef("");
+  const speechInterimTextRef = useRef("");
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const [hasStarted, setHasStarted] = useState(false)
+  const [showAllChatsPanel, setShowAllChatsPanel] = useState(false);
+  const [allChatsSessions, setAllChatsSessions] = useState([]);
+  const [allChatsLoading, setAllChatsLoading] = useState(false);
+  const [allChatsSearchTerm, setAllChatsSearchTerm] = useState("");
 
   const [logoutload, setLodoutLoad] = useState(false)
 
+  const mergeSpeechText = (baseText, nextText) => {
+    return [baseText?.trim(), nextText?.trim()]
+      .filter(Boolean)
+      .join(" ")
+      .trimStart();
+  };
+
+  const buildSpeechInputText = () => {
+    const speechChunk = mergeSpeechText(
+      speechFinalTextRef.current,
+      speechInterimTextRef.current
+    );
+    return mergeSpeechText(speechBaseInputRef.current, speechChunk);
+  };
+
+  const resetWaveform = () => {
+    setWaveformLevels(Array.from({ length: 120 }, () => 3));
+  };
+
+  const stopAudioLevelMonitoring = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+
+    analyserRef.current = null;
+    dataArrayRef.current = null;
+    resetWaveform();
+  };
+
+  const startAudioLevelMonitoring = async () => {
+    stopAudioLevelMonitoring();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStreamRef.current = stream;
+
+    const AudioContextApi = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextApi) return;
+
+    const audioContext = new AudioContextApi();
+    audioContextRef.current = audioContext;
+
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.85;
+    analyserRef.current = analyser;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    dataArrayRef.current = dataArray;
+
+    const tick = () => {
+      if (!analyserRef.current || !dataArrayRef.current) return;
+
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      let sum = 0;
+      for (let i = 0; i < dataArrayRef.current.length; i += 1) {
+        sum += dataArrayRef.current[i];
+      }
+      const avg = sum / dataArrayRef.current.length;
+
+      const normalized = Math.max(0, Math.min(1, avg / 85));
+      const height = 3 + Math.round(normalized * 21);
+
+      setWaveformLevels((prev) => [...prev.slice(1), height]);
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+  };
+
+  const stopSpeechRecognition = (commitToInput = true) => {
+    if (commitToInput) {
+      setInput(buildSpeechInputText());
+    }
+    if (!speechRecognitionRef.current) return;
+    try {
+      speechRecognitionRef.current.stop();
+    } catch (error) {
+      console.error("Failed to stop speech recognition:", error);
+    }
+    stopAudioLevelMonitoring();
+  };
+
+  const handleSpeechResult = (event) => {
+    let finalText = "";
+    let interimText = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const transcript = result[0]?.transcript || "";
+      if (result.isFinal) {
+        finalText += transcript;
+      } else {
+        interimText += transcript;
+      }
+    }
+
+    if (finalText) {
+      speechBaseInputRef.current = mergeSpeechText(speechBaseInputRef.current, finalText);
+      speechFinalTextRef.current = mergeSpeechText(speechFinalTextRef.current, finalText);
+    }
+
+    speechInterimTextRef.current = interimText;
+  };
+
+  const toggleSpeechRecognition = () => {
+    const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognitionApi) {
+      alert("Speech-to-text is not supported in this browser.");
+      return;
+    }
+
+    if (!speechRecognitionRef.current) {
+      const recognition = new SpeechRecognitionApi();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        startAudioLevelMonitoring().catch((error) => {
+          console.error("Failed to start audio level monitoring:", error);
+          resetWaveform();
+        });
+      };
+
+      recognition.onresult = handleSpeechResult;
+
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        stopAudioLevelMonitoring();
+        if (event.error !== "aborted") {
+          console.error("Speech recognition error:", event.error);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        stopAudioLevelMonitoring();
+      };
+
+      speechRecognitionRef.current = recognition;
+    }
+
+    if (isListening) {
+      stopSpeechRecognition(true);
+      return;
+    }
+
+    speechBaseInputRef.current = input || "";
+    speechFinalTextRef.current = "";
+    speechInterimTextRef.current = "";
+    try {
+      speechRecognitionRef.current.start();
+    } catch (error) {
+      console.error("Failed to start speech recognition:", error);
+    }
+  };
+
+  const handleCancelVoiceInput = () => {
+    setInput(speechBaseInputRef.current || "");
+    stopSpeechRecognition(false);
+  };
+
+  const handleConfirmVoiceInput = () => {
+    stopSpeechRecognition(true);
+  };
+
+  const renderVoiceWaveform = () => (
+    <div className="h-14 w-full flex items-center overflow-hidden">
+      <div className="h-full w-full flex items-center gap-px overflow-hidden">
+        {waveformLevels.map((height, index) => (
+          <span
+            key={`wave-${index}`}
+            className="flex-1 min-w-[1px] rounded-full bg-zinc-300/80 transition-all duration-75"
+            style={{ height: `${height}px` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  const formatToolStatus = (toolPayload) => {
+    if (!toolPayload) return "";
+    if (toolPayload.status === "completed") return "Preparing a grounded answer...";
+
+    const node = String(toolPayload.node || "").toLowerCase();
+    if (node === "web_search" || node === "tools") return "Researching trusted web sources...";
+    if (node.includes("hospital")) return "Checking healthcare facility information...";
+    if (node.includes("appointment")) return "Reviewing appointment details...";
+    if (node.includes("medical") || node.includes("info")) return "Reviewing clinical context...";
+
+    return "Consulting specialized tools...";
+  };
+
+  const shouldAutoUseWebSearch = (text) => {
+    if (!text) return false;
+    const explicitWebSearchIntent =
+      /\b(use|do|can|please)\b[\s\S]{0,40}\b(web\s*search|search\s+the\s+web|online\s+search|browse\s+the\s+web)\b/i.test(text) ||
+      /\b(web\s*search|search\s+the\s+web|online\s+search|browse\s+the\s+web)\b[\s\S]{0,40}\b(please|use|do|can)\b/i.test(text);
+
+    const freshnessIntent =
+      /\b(latest|current|today|recent|new|newest|breaking|live|up[-\s]?to[-\s]?date|as of)\b/i.test(text) &&
+      /\b(news|update|updates|status|price|prices|trend|trends|rate|rates|guideline|guidelines|policy|policies|announcement|announcements|outbreak|outbreaks|case|cases|score|scores|result|results|data|chart|graph|table|statistics|metrics)\b/i.test(text);
+
+    const timeSensitiveQuestion =
+      /\b(what'?s happening now|what is happening now|right now|this week|this month|this year)\b/i.test(text);
+
+    const dataVisualizationIntent =
+      /\b(chart|graph|table|statistics|statistical|data|dataset|metrics|trend|trends)\b/i.test(text);
+
+    return explicitWebSearchIntent || freshnessIntent || timeSensitiveQuestion || dataVisualizationIntent;
+  };
 
 
 
@@ -70,7 +315,48 @@ const ChatUI = () => {
   const handleNewSession = () => {
     setMessages([]);
     setWelcomeMounted(true);
+    setHistoryLoading(false);
+    setToolStatus("");
+    setShowAllChatsPanel(false);
   };
+
+  const fetchAllChatsSessions = async () => {
+    setAllChatsLoading(true);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/chat-sessions`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      if (response.data?.sessions) {
+        const sortedSessions = [...response.data.sessions].sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setAllChatsSessions(sortedSessions);
+      } else {
+        setAllChatsSessions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all chats:', error);
+      setAllChatsSessions([]);
+    } finally {
+      setAllChatsLoading(false);
+    }
+  };
+
+  const handleOpenChatsPanel = async () => {
+    setShowAllChatsPanel(true);
+    setAllChatsSearchTerm("");
+    await fetchAllChatsSessions();
+  };
+
+  const filteredAllChatsSessions = allChatsSessions.filter((session) => {
+    const q = allChatsSearchTerm.trim().toLowerCase();
+    if (!q) return true;
+    const title = (session.session_title || `Chat Session ${session.session_id?.slice(-4) || ""}`).toLowerCase();
+    const time = session.timestamp ? new Date(session.timestamp).toLocaleString().toLowerCase() : "";
+    return title.includes(q) || time.includes(q);
+  });
 
   // End the current session
   const handleEndSession = async () => {
@@ -116,6 +402,10 @@ const ChatUI = () => {
 
   // Start the Server Side Events 
   const startSSE = async (e) => {
+    if (isListening) {
+      stopSpeechRecognition(true);
+      return;
+    }
     let messageToSend = null;
 
     if (e && e.target && e.target.textContent) {
@@ -155,10 +445,21 @@ const ChatUI = () => {
       setLoading(true)
     }
     try {
+      setToolStatus("");
+      const explicitWebSearchRequest = shouldAutoUseWebSearch(messageToSend);
+      const effectiveQueryModeType =
+        isWebSearchEnabled || explicitWebSearchRequest
+          ? "web_search"
+          : responseType;
+
+      if (effectiveQueryModeType === "web_search") {
+        setToolStatus("Researching trusted web sources...");
+      }
+
       // Streaming API call
       const data = await AssistantService.createStreamingConversation(
         messageToSend,
-        responseType
+        effectiveQueryModeType
       );
       setHasStarted(true)
 
@@ -175,6 +476,11 @@ const ChatUI = () => {
       AssistantService.streamResponse(
         data.thread_id,
         (data) => {
+          if (data?.tool) {
+            setToolStatus(formatToolStatus(data.tool));
+            return;
+          }
+
           if (data && data.content) {
             // Update our ref with the new content
             startAccumulatedResponseRef.current += data.content;
@@ -201,25 +507,39 @@ const ChatUI = () => {
         // Error callback
         (error) => {
           console.error("Streaming error:", error);
-          // Check if error has a message property before using it
           const errorMessage = error && error.message ? error.message : "Unknown error";
-          alert("Streaming error: " + errorMessage);
-          setHasStarted(false)
+          setLoading(false);
+          setHasStarted(false);
+          setToolStatus("");
+          setMessages((prev) => [
+            ...prev,
+            {
+              name: "Sathi",
+              message: `Unable to finish response: ${errorMessage}. Please try again.`,
+            },
+          ]);
         },
         // Complete callback
         () => {
           console.log("Stream completed");
           setHasStarted(false)
+          setToolStatus("");
           // Final history update is already handled in the message callback
         }
 
       );
     } catch (err) {
-      setMessages("");
-      // Check if error has a message property before using it
       const errorMessage = err && err.message ? err.message : "Unknown error";
-      alert("Failed to contact backend: " + errorMessage);
-      setHasStarted(false)
+      setLoading(false);
+      setHasStarted(false);
+      setToolStatus("");
+      setMessages((prev) => [
+        ...prev,
+        {
+          name: "Sathi",
+          message: `Unable to start response: ${errorMessage}. Please try again.`,
+        },
+      ]);
     }
 
   };
@@ -229,13 +549,45 @@ const ChatUI = () => {
     AssistantService.stopStreaming();
     setHasStarted(false)
     setLoading(false)
+    setToolStatus("");
   }
+
+  useEffect(() => {
+    return () => {
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.onstart = null;
+        speechRecognitionRef.current.onresult = null;
+        speechRecognitionRef.current.onerror = null;
+        speechRecognitionRef.current.onend = null;
+        try {
+          speechRecognitionRef.current.stop();
+        } catch {}
+      }
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
+
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
   // Refresh the chat_history if new chat_session has been created
   const handleSelectChatSession = (sessionId) => {
-    setMessages([]); // Clear current messages
+    setShowAllChatsPanel(false);
+    setHistoryLoading(true);
     setLoading(false);
     setWelcomeMounted(false)
+    setToolStatus("");
     fetch(`${process.env.REACT_APP_POINT_AGENT}/api/v1/generate-stream/chat-history/${sessionId}`, {
       method: 'GET',
       headers: {
@@ -267,16 +619,35 @@ const ChatUI = () => {
       })
       .finally(() => {
         setLoading(false);
+        setHistoryLoading(false);
       });
+  };
+
+  const toggleWebSearchMode = () => {
+    setIsWebSearchEnabled((prev) => {
+      const next = !prev;
+      if (next) {
+        setResponseType("quick");
+      }
+      return next;
+    });
+  };
+
+  const handleResponseTypeChange = (mode) => {
+    setResponseType(mode);
+    if (mode !== "quick") {
+      setIsWebSearchEnabled(false);
+    }
   };
 
 
   // const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const isMobile = useIsMobile()
   const [isOpen, setIsOpen] = useState(window.innerWidth >= 768)
+  const desktopSidebarOffset = !isMobile && isOpen ? "16rem" : "0px";
 
   useEffect(() => {
-    if (!isMobile) {
+    if (isMobile) {
       setIsOpen(false);
     }
   }, [isMobile]);
@@ -327,14 +698,23 @@ const ChatUI = () => {
           onSelectChatSession={handleSelectChatSession}
           onNewSessionClick={handleNewSession}
           onCurrentSessionId={hasStarted}
+          onOpenChatsPanel={handleOpenChatsPanel}
+          onLogout={handleLogout}
+          logoutLoading={logoutload}
         />
       </div>
 
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col bg-[#0f1117] text-white w-full relative h-full">
+      <div
+        className="flex-1 flex flex-col bg-[#0f1117] text-white w-full relative h-full transition-all duration-300"
+        style={{ marginLeft: desktopSidebarOffset }}
+      >
         {/* Navbar */}
-        <div className="fixed flex items-center top-0 left-0 right-0 z-10 pointer-events-none">
+        <div
+          className="fixed flex items-center top-0 right-0 z-10 pointer-events-none transition-all duration-300"
+          style={{ left: desktopSidebarOffset }}
+        >
           <div className="pointer-events-auto">
             {isMobile && (
               <>
@@ -343,10 +723,10 @@ const ChatUI = () => {
                 ) : (
 
                   <button
-                    className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
+                    className="text-gray-200 top-0 left-0 m-1 ml-2 rounded-md p-2 z-40 focus:outline-none transition-colors hover:bg-[#02040a] hover:text-gray-100"
                     onClick={() => setIsOpen(prev => !prev)}
                   >
-                    <PanelLeftOpen size={22} />
+                    <PanelLeftClose size={16} strokeWidth={1.5} />
                   </button>
                 )}
               </>
@@ -355,33 +735,83 @@ const ChatUI = () => {
               <>
                 {isOpen ? (
                   <button
-                    className="translate-x-64 text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none "
+                    className="text-gray-200 top-0 left-0 m-1 ml-2 rounded-md p-2 z-40 focus:outline-none transition-colors hover:bg-[#02040a] hover:text-gray-100"
                     onClick={() => setIsOpen(prev => !prev)}
                   >
-                    <PanelRightOpen size={22} />
+                    <Sidebar size={16} strokeWidth={1.5} />
                   </button>
                 ) : (
 
                   <button
-                    className="text-gray-200 top-0 left-0 m-1 ml-2 p-3 z-40 focus:outline-none button-hover hover:text-cyan-400"
+                    className="text-gray-200 top-0 left-0 m-1 ml-2 rounded-md p-2 z-40 focus:outline-none transition-colors hover:bg-[#02040a] hover:text-gray-100"
                     onClick={() => setIsOpen(prev => !prev)}
                   >
-                    <PanelLeftOpen size={22} />
+                    <Sidebar size={16} strokeWidth={1.5} />
                   </button>
                 )}
               </>
             )}
           </div>
-          <button
-            onClick={handleLogout}
-            className="absolute top-0 right-0 m-1 mr-2 p-3 rounded-full pointer-events-auto">
-            {logoutload ? <Loader size={20} className="loader" /> : <LogOut size={20} />}
-          </button>
         </div>
 
 
         {/* Centered Welcome / Input Container */}
-        {messages.length === 0 ? (
+        {showAllChatsPanel ? (
+          <div className="flex-1 overflow-y-auto pt-20 pb-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-zinc-100">Chats</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAllChatsPanel(false)}
+                  className="rounded-md px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={allChatsSearchTerm}
+                  onChange={(e) => setAllChatsSearchTerm(e.target.value)}
+                  placeholder="Search chats"
+                  className="w-full rounded-lg bg-[#121722]/70 px-4 py-2.5 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:bg-[#151d2b]"
+                />
+              </div>
+
+              {allChatsLoading ? (
+                <div className="flex items-center gap-2 text-zinc-300">
+                  <LoaderCircle size={16} className="animate-spin" />
+                  <span>Loading chats...</span>
+                </div>
+              ) : filteredAllChatsSessions.length === 0 ? (
+                <div className="rounded-xl bg-[#121722]/70 p-6 text-sm text-zinc-400">
+                  No chats found for that search.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredAllChatsSessions.map((session) => {
+                    const sessionId = session.session_id;
+                    const title = session.session_title || `Chat Session ${sessionId?.slice(-4) || ""}`;
+                    const time = session.timestamp ? new Date(session.timestamp).toLocaleString() : "Unknown time";
+
+                    return (
+                      <button
+                        key={session._id || sessionId}
+                        type="button"
+                        onClick={() => handleSelectChatSession(sessionId)}
+                        className="w-full rounded-lg px-4 py-3 text-left transition-colors hover:bg-[#02040a]"
+                      >
+                        <div className="truncate text-sm font-medium text-zinc-100">{title}</div>
+                        <div className="mt-1 text-xs text-zinc-400">{time}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : messages.length === 0 && !historyLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-4 w-full h-full overflow-y-auto">
             <div className="w-full max-w-3xl flex flex-col items-center space-y-8">
               {/* Greeting */}
@@ -398,33 +828,37 @@ const ChatUI = () => {
               {/* Input Area (Centered) */}
               <div className="w-full max-w-2xl">
                 <div className="bg-[#0B0E17] rounded-[24px] p-4 shadow-2xl border border-[#181B24] ring-1 ring-white/5">
-                  <div className="flex flex-col">
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onInput={e => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          startSSE()
-                        }
-                      }}
-                      placeholder="Ask anything..."
-                      rows={1}
-                      className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-3 placeholder-gray-500/70 resize-none overflow-hidden"
-                      style={{ minHeight: '24px', maxHeight: '200px' }}
-                      autoFocus
-                    />
-                  </div>
+                  {isListening ? (
+                    renderVoiceWaveform()
+                  ) : (
+                    <div className="flex flex-col">
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onInput={e => {
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            startSSE()
+                          }
+                        }}
+                        placeholder="Ask anything..."
+                        rows={1}
+                        className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-2 placeholder-gray-500/70 resize-none overflow-hidden"
+                        style={{ minHeight: '24px', maxHeight: '200px' }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center pt-2">
                     <div className="flex items-center gap-1">
                       <CustomQuickResponseDropdown
                         value={responseType}
-                        onChange={setResponseType}
+                        onChange={handleResponseTypeChange}
                       />
                       <button
                         className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
@@ -433,25 +867,54 @@ const ChatUI = () => {
                         <Plus className="w-5 h-5" strokeWidth={2.4} />
                       </button>
                       <button
-                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border ${isWebSearchEnabled
+                            ? 'text-blue-400 bg-white/10 border-blue-400/50'
+                            : 'text-zinc-400 hover:text-white hover:bg-white/10 border-white/10 hover:border-white/20'
+                          }`}
                         title="Web search"
+                        onClick={toggleWebSearchMode}
                       >
                         <Globe className="w-5 h-5" strokeWidth={2.4} />
                       </button>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
-                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
-                        title="Voice input"
-                      >
-                        <Mic className="w-5 h-5" strokeWidth={2.4} />
-                      </button>
-                      <SendButton
-                        isStarting={hasStarted}
-                        input={input}
-                        startSSE={startSSE}
-                        stopSSE={stopSSE}
-                      />
+                      {isListening ? (
+                        <>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-200 border-white/20 hover:bg-white/10"
+                            title="Cancel voice input"
+                            onClick={handleCancelVoiceInput}
+                            type="button"
+                          >
+                            <X className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-100 border-white/35 hover:bg-white/10"
+                            title="Confirm voice input"
+                            onClick={handleConfirmVoiceInput}
+                            type="button"
+                          >
+                            <Check className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-400 hover:text-white hover:bg-white/10 border-white/10 hover:border-white/20"
+                            title="Voice input"
+                            onClick={toggleSpeechRecognition}
+                            type="button"
+                          >
+                            <Mic className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                          <SendButton
+                            isStarting={hasStarted}
+                            input={input}
+                            startSSE={startSSE}
+                            stopSSE={stopSSE}
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -459,15 +922,15 @@ const ChatUI = () => {
 
               {/* Suggestions Chips */}
               {/* Suggestions Chips */}
-              <div className="w-full max-w-3xl px-4">
-                <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex w-full max-w-3xl justify-center px-4">
+                <div className="flex w-fit flex-wrap items-center justify-center gap-1 rounded-2xl">
                   {[
-                    { icon: Lightbulb, color: "text-yellow-500", title: "Brainstorm", prompt: "Brainstorm creative solutions for..." },
-                    { icon: HeartHandshake, color: "text-blue-500", title: "Health", prompt: "Give me some health tips for..." },
-                    { icon: GraduationCap, color: "text-green-500", title: "Learn", prompt: "Explain the concept of..." },
-                    { icon: NotepadText, color: "text-violet-500", title: "Quiz", prompt: "Create a quiz about..." },
-                    { icon: PencilLine, color: "text-pink-500", title: "Advice", prompt: "I need advice on..." },
-                    { icon: HiOutlineLightBulb, color: "text-cyan-500", title: "Plan", prompt: "Help me plan my day..." },
+                    { icon: Lightbulb, title: "Brainstorm", prompt: "Brainstorm creative solutions for..." },
+                    { icon: HeartHandshake, title: "Health", prompt: "Give me some health tips for..." },
+                    { icon: GraduationCap, title: "Learn", prompt: "Explain the concept of..." },
+                    { icon: NotepadText, title: "Quiz", prompt: "Create a quiz about..." },
+                    { icon: PencilLine, title: "Advice", prompt: "I need advice on..." },
+                    { icon: HiOutlineLightBulb, title: "Plan", prompt: "Help me plan my day..." },
                   ].map((item, idx) => (
                     <button
                       key={idx}
@@ -476,10 +939,10 @@ const ChatUI = () => {
                           startSSE({ target: { textContent: item.prompt } });
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#161b22]/80 hover:bg-[#2d3342] border border-[#363b49] hover:border-gray-400 rounded-full transition-all duration-200 group"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-zinc-300 transition-colors duration-200 hover:bg-[#02040a] active:bg-[#000208] hover:text-zinc-100"
                     >
-                      <item.icon className={`w-4 h-4 ${item.color}`} />
-                      <span className="text-sm font-medium text-gray-200 group-hover:text-white">{item.title}</span>
+                      <item.icon className="h-4 w-4 text-zinc-400" />
+                      <span className="text-sm font-medium tracking-[0.01em]">{item.title}</span>
                     </button>
                   ))}
                 </div>
@@ -503,9 +966,10 @@ const ChatUI = () => {
                           content: msg.message
                         }}
                         isLast={isLastAssistantMessage}
+                        isStreaming={hasStarted}
                         onRetry={(mode) => {
                           // 1. Set the response type mode
-                          setResponseType(mode === 'quick' ? 'quick_response' : 'think_deeper');
+                          handleResponseTypeChange(mode === 'quick' ? 'quick' : 'think');
 
                           // 2. Find the last user message to re-send
                           // We need to look backwards from this message
@@ -535,7 +999,7 @@ const ChatUI = () => {
                             // But startSSE definition isn't fully visible.
                             // Let's look at how suggestions use it: 
                             // startSSE({ target: { textContent: item.prompt } })
-                            startSSE({ target: { textContent: lastUserMessage } });
+                            startSSE({ target: { textContent: lastUserMessage }, skipUserMessage: true });
                           }
                         }}
                       />
@@ -543,11 +1007,18 @@ const ChatUI = () => {
                   })}
                   {loading && (
                     <div className="flex justify-start px-4">
-                      <div className="typing-indicator flex space-x-1">
-                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></span>
-                        <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></span>
-                      </div>
+                      {toolStatus ? (
+                        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#121722]/75 border border-[#273247] text-sm text-gray-300">
+                          <Globe className="w-4 h-4 text-gray-400" />
+                          <span>{toolStatus}</span>
+                        </div>
+                      ) : (
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div ref={messagesEndRef} className="h-4" />
@@ -556,36 +1027,43 @@ const ChatUI = () => {
             </div>
 
             {/* Input Area (Bottom Fixed) */}
-            <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0f1117] via-[#0f1117] to-transparent pt-10 pb-6 px-4 z-20">
+            <div
+              className="fixed bottom-0 right-0 bg-gradient-to-t from-[#0f1117] via-[#0f1117] to-transparent pt-10 pb-6 px-4 z-20 transition-all duration-300"
+              style={{ left: desktopSidebarOffset }}
+            >
               <div className="max-w-3xl mx-auto w-full">
                 <div className="bg-[#0B0E17] rounded-[24px] p-4 shadow-2xl border border-[#181B24] ring-1 ring-white/5">
-                  <div className="flex flex-col">
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onInput={e => {
-                        e.target.style.height = 'auto'; // Reset height
-                        e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; // Set new height, max 200px
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          startSSE()
-                        }
-                      }}
-                      placeholder="Ask anything..."
-                      rows={1}
-                      className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-2 placeholder-gray-500/70 resize-none overflow-y-auto custom-scrollbar"
-                      style={{ minHeight: '24px', maxHeight: '200px' }}
-                      autoFocus
-                    />
-                  </div>
+                  {isListening ? (
+                    renderVoiceWaveform()
+                  ) : (
+                    <div className="flex flex-col">
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onInput={e => {
+                          e.target.style.height = 'auto'; // Reset height
+                          e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; // Set new height, max 200px
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            startSSE()
+                          }
+                        }}
+                        placeholder="Ask anything..."
+                        rows={1}
+                        className="pl-2 bg-transparent text-gray-200 w-full focus:outline-none text-base mb-2 placeholder-gray-500/70 resize-none overflow-y-auto custom-scrollbar"
+                        style={{ minHeight: '24px', maxHeight: '200px' }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center pt-2">
                     <div className="flex items-center gap-1">
                       <CustomQuickResponseDropdown
                         value={responseType}
-                        onChange={setResponseType}
+                        onChange={handleResponseTypeChange}
                       />
                       <button
                         className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
@@ -594,29 +1072,54 @@ const ChatUI = () => {
                         <Plus className="w-5 h-5" strokeWidth={2.4} />
                       </button>
                       <button
-                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border ${responseType === 'web_search'
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border ${isWebSearchEnabled
                             ? 'text-blue-400 bg-white/10 border-blue-400/50'
                             : 'text-zinc-400 hover:text-white hover:bg-white/10 border-white/10 hover:border-white/20'
                           }`}
                         title="Web search"
-                        onClick={() => setResponseType(prev => prev === 'web_search' ? 'quick' : 'web_search')}
+                        onClick={toggleWebSearchMode}
                       >
                         <Globe className="w-5 h-5" strokeWidth={2.4} />
                       </button>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
-                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-white/10 hover:border-white/20"
-                        title="Voice input"
-                      >
-                        <Mic className="w-5 h-5" strokeWidth={2.4} />
-                      </button>
-                      <SendButton
-                        isStarting={hasStarted}
-                        input={input}
-                        startSSE={startSSE}
-                        stopSSE={stopSSE}
-                      />
+                      {isListening ? (
+                        <>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-200 border-white/20 hover:bg-white/10"
+                            title="Cancel voice input"
+                            onClick={handleCancelVoiceInput}
+                            type="button"
+                          >
+                            <X className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-100 border-white/35 hover:bg-white/10"
+                            title="Confirm voice input"
+                            onClick={handleConfirmVoiceInput}
+                            type="button"
+                          >
+                            <Check className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 border text-zinc-400 hover:text-white hover:bg-white/10 border-white/10 hover:border-white/20"
+                            title="Voice input"
+                            onClick={toggleSpeechRecognition}
+                            type="button"
+                          >
+                            <Mic className="w-5 h-5" strokeWidth={2.4} />
+                          </button>
+                          <SendButton
+                            isStarting={hasStarted}
+                            input={input}
+                            startSSE={startSSE}
+                            stopSSE={stopSSE}
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

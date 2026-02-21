@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'  // Add this import at the top
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../components/ui/card"
 // import { Label } from "../components/ui/label"
 // import {Mail, GalleryVerticalEnd} from "lucide-react"
-import { Phone, Loader } from "lucide-react"
+import { Phone, LoaderCircle } from "lucide-react"
 import RightPanelContent from '../components/ui/rightpanel'
 import "../components/styles/App.css";
 import med44 from "../med44.jpeg"
@@ -209,7 +209,7 @@ const Login = () => {
             >
               <div className="flex items-center justify-center">
 
-                {loading ? <Loader size={24} color="#fff" className="loader" /> : 'Continue'}
+                {loading ? <LoaderCircle size={24} color="#fff" className="animate-spin" /> : 'Continue'}
               </div>
             </button>
             <div className="flex items-center mb-6"> {/* Added container classes */}

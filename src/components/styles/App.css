@@ -72,19 +72,18 @@
 }
 
 .typing-indicator {
-  /* display: flex;
-  align-items: center; */
-  margin-left: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .typing-indicator span {
   display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: #8a92a2;
-  animation: typing 1.4s infinite ease-in-out;
+  animation: typing 1.2s infinite ease-in-out;
 }
 
 .typing-indicator span:nth-child(2) {
@@ -166,9 +165,26 @@
 
 .scrollbar-side {
   overflow-y: overlay;
-  scrollbar-width: auto;
+  scrollbar-width: thin;
   scrollbar-color: #262d3d #141820;
   box-sizing: content-box; 
+}
+
+.scrollbar-side::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-side::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-side::-webkit-scrollbar-thumb {
+  background: #2a3244;
+  border-radius: 9999px;
+}
+
+.scrollbar-side::-webkit-scrollbar-thumb:hover {
+  background: #3a4660;
 }
 
 

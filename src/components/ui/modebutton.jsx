@@ -1,7 +1,7 @@
 import { Listbox } from '@headlessui/react'
 
 import "../styles/App.css";
-import { Brain, Zap, Globe } from 'lucide-react';
+import { Brain, Zap } from 'lucide-react';
 
 const options = [
     {
@@ -20,13 +20,6 @@ const options = [
         // icon: <i class="fa-solid fa-brain mr-5"></i>,
         icon: <Brain size={22} color="#ffffff" className=' mr-4' />,
         badge: <span className=" ml-[5px] bg-[#0B0E17] text-[#a3b0d9] text-xs font-sans rounded px-1 leading-4 ">~10 sec</span>,
-    },
-    {
-        value: 'web_search',
-        label: 'Web Search',
-        icon: <Globe size={22} color="#ffffff" className=' mr-4' />,
-        info: <span className='font'>Search the web</span>,
-        badge: <span className="ml-[5px] bg-[#0B0E17] text-[#a3b0d9] text-xs font-sans rounded px-1 leading-4">~5 sec</span>,
     }
 ];
 

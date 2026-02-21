@@ -38,6 +38,28 @@ export default class AssistantService {
     // Create a new EventSource connection to the streaming endpoint
     const eventSource = new EventSource(`${BASE_URL}/api/v1/generate-stream/${thread_id}`);
     AssistantService.currentEventSource = eventSource
+    let streamSettled = false;
+
+    const settleComplete = () => {
+      if (streamSettled) return;
+      streamSettled = true;
+      eventSource.close();
+      if (AssistantService.currentEventSource === eventSource) {
+        AssistantService.currentEventSource = null;
+      }
+      onCompleteCallback();
+    };
+
+    const settleError = (error) => {
+      if (streamSettled) return;
+      streamSettled = true;
+      eventSource.close();
+      if (AssistantService.currentEventSource === eventSource) {
+        AssistantService.currentEventSource = null;
+      }
+      onErrorCallback(error);
+    };
+
     // Handle token events (content streaming)
     eventSource.addEventListener('token', (event) => {
       try {
@@ -62,9 +84,35 @@ export default class AssistantService {
         }
         window._hasReceivedStatusEvent[eventSource.url] = true;
         console.log("Received status event, marking connection for normal closure");
+        if (data.status === "finished") {
+          settleComplete();
+        }
       } catch (error) {
         console.error("Error parsing status event:", error, "Raw data:", event.data);
-        onErrorCallback(error);
+        settleError(error);
+      }
+    });
+
+    // Handle tool execution events
+    eventSource.addEventListener('tool', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Tool event received:", data);
+        onMessageCallback({ tool: data });
+      } catch (error) {
+        console.error("Error parsing tool event:", error, "Raw data:", event.data);
+        settleError(error);
+      }
+    });
+
+    // Handle source citation events
+    eventSource.addEventListener('sources', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessageCallback({ sources: data.sources || [] });
+      } catch (error) {
+        console.error("Error parsing sources event:", error, "Raw data:", event.data);
+        settleError(error);
       }
     });
     
@@ -76,9 +124,17 @@ export default class AssistantService {
     eventSource.addEventListener('resume', (event) => {
       console.log("Stream resumed:", event.data);
     });
+
+    eventSource.addEventListener('close', () => {
+      console.log("Received close event from server");
+      settleComplete();
+    });
     
     // Handle errors
     eventSource.onerror = (error) => {
+      if (streamSettled) {
+        return;
+      }
       console.log("SSE connection state change - readyState:", eventSource.readyState);
       
       // Check if we've received a status event indicating completion
@@ -86,21 +142,26 @@ export default class AssistantService {
       
       if (hasReceivedStatusEvent) {
         console.log("Stream completed normally after receiving status event");
-        eventSource.close();
-        onCompleteCallback();
+        settleComplete();
         return;
       }
       
-      // Only call the error callback if it's a real error, not a normal close
-      if (eventSource.readyState !== EventSource.CLOSED && eventSource.readyState !== EventSource.CONNECTING) {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        console.log("Stream closed");
+        settleComplete();
+        return;
+      }
+
+      // CONNECTING is usually transient auto-reconnect; do not fail immediately.
+      if (eventSource.readyState === EventSource.CONNECTING) {
+        console.log("Stream reconnecting...");
+        return;
+      }
+
+      // Only call the error callback if it's a real error.
+      if (eventSource.readyState !== EventSource.CLOSED) {
         console.error("SSE connection error:", error);
-        eventSource.close();
-        // Pass a proper error object with a message to avoid 'undefined' errors
-        onErrorCallback(new Error("Connection error or server disconnected"));
-      } else {
-        // If it's a normal close or reconnecting, call the complete callback
-        console.log("Stream completed normally");
-        onCompleteCallback();
+        settleError(new Error("Connection error or server disconnected"));
       }
     };
     
@@ -118,4 +179,3 @@ export default class AssistantService {
     }
   }
 }
-
